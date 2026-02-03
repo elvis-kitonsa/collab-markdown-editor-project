@@ -41,7 +41,8 @@ function App() {
 
     // Cleanup on close
     return () => newSocket.disconnect();
-  }, []);
+  }, [roomName]);
+  // [roomName] means that if the roomName in the URL changes, disconnect from the old room and connect to the new one.
 
   const handleTextChange = (e) => {
     const newValue = e.target.value;
