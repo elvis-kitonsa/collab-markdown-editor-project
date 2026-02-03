@@ -11,22 +11,30 @@ const server = http.createServer(app);
 // Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Your React app's URL
+    origin: ["http://localhost:5173", "http://localhost:5174"], // Since Vite sometimes jumps between ports if one is busy
     methods: ["GET", "POST"],
   },
 });
 
-// 1. Add the variable here (outside the connection block)
+// VARIABLES (Outside the connection block so they stay persistent)
 let onlineUsers = 0;
+let currentMarkdown = "# Hello World\nStart typing..."; // This is the "Library" copy. We added this at the top so the server has a "brain" to remember the text.
 
 io.on("connection", (socket) => {
-  // 2. Increment and notify everyone as soon as they connect
+  // User Presence Logic
   onlineUsers++;
   io.emit("user-count", onlineUsers);
+
+  // 2. INITIAL SYNC: Send the "Library" copy to the new user immediately
+  // Provides newly logged on user with a copy of the entire document to work with
+  //in case the user missed something due to joining late
+  socket.emit("receive-markdown", currentMarkdown);
+
   console.log("A user connected:", socket.id, "Total users:", onlineUsers);
 
-  // Your existing markdown sync logic
+  // 3. Edit Logic
   socket.on("edit-markdown", (data) => {
+    currentMarkdown = data; // UPDATE the "Library" copy so it's fresh for the next person (We make sure that the server updates its own memory before telling everyone else about the change)
     socket.broadcast.emit("receive-markdown", data);
   });
 
