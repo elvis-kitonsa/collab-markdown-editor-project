@@ -16,17 +16,25 @@ const io = new Server(server, {
   },
 });
 
-io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
+// 1. Add the variable here (outside the connection block)
+let onlineUsers = 0;
 
-  // When the server receives 'edit-markdown' from one user...
+io.on("connection", (socket) => {
+  // 2. Increment and notify everyone as soon as they connect
+  onlineUsers++;
+  io.emit("user-count", onlineUsers);
+  console.log("A user connected:", socket.id, "Total users:", onlineUsers);
+
+  // Your existing markdown sync logic
   socket.on("edit-markdown", (data) => {
-    // ...it broadcasts it to everyone ELSE
     socket.broadcast.emit("receive-markdown", data);
   });
 
+  // 3. Update the disconnect logic to decrement and notify
   socket.on("disconnect", () => {
-    console.log("User disconnected");
+    onlineUsers--;
+    io.emit("user-count", onlineUsers);
+    console.log("User disconnected. Total users:", onlineUsers);
   });
 });
 
