@@ -1,42 +1,61 @@
+/* Reset default margins */
+html,
+body,
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.app-header {
+  background: #1e1e1e;
+  color: #ffffff;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #333;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.editor-main {
+  display: flex;
+  flex: 1; /* This takes up the remaining screen space */
+  overflow: hidden;
 }
 
-.card {
-  padding: 2em;
+.editor-textarea {
+  flex: 1;
+  padding: 20px;
+  font-size: 16px;
+  font-family: "Fira Code", "Courier New", monospace;
+  border: none;
+  border-right: 1px solid #ddd;
+  outline: none;
+  resize: none;
+  background: #fafafa;
+  color: #333;
 }
 
-.read-the-docs {
-  color: #888;
+.editor-preview {
+  flex: 1;
+  padding: 20px;
+  background: #ffffff;
+  overflow-y: auto;
+  color: #000; /* Ensures text is visible */
+}
+
+.status-badge {
+  background: #007acc;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
 }
