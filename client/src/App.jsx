@@ -15,6 +15,21 @@ function App() {
   const [markdown, setMarkdown] = useState("Loading...");
   const [userCount, setUserCount] = useState(1);
   const [socket, setSocket] = useState(null); // Added missing socket state
+  const [rooms, setRooms] = useState([]); // State to hold room list
+
+  // Fetch rooms from the database
+  useEffect(() => {
+    fetch("http://localhost:3001/rooms")
+      .then((res) => res.json())
+      .then((data) => setRooms(data));
+  }, []);
+
+  const createNewRoom = () => {
+    const name = prompt("Enter new room name:");
+    if (name) {
+      window.location.href = `/${name.toLowerCase().replace(/\s+/g, "-")}`;
+    }
+  };
 
   useEffect(() => {
     // Pass the room name to the server when connecting
@@ -24,10 +39,6 @@ function App() {
     });
 
     setSocket(newSocket);
-
-    newSocket.on("receive-markdown", (data) => {
-      setMarkdown(data);
-    });
 
     // 3. Listen for data specifically for this room
     newSocket.on("receive-markdown", (data) => {
@@ -55,19 +66,37 @@ function App() {
   };
 
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <h1>Collab Editor: {roomName}</h1>
-        <div className="status-badge">Users Online: {userCount}</div>
-      </header>
+    <div className="app-layout">
+      {" "}
+      {/* Use app-layout for flexbox */}
+      {/* 1. THE SIDEBAR (Missing in your version) */}
+      <aside className="sidebar">
+        <h3>Rooms</h3>
+        <button onClick={createNewRoom} className="new-room-btn">
+          + New Room
+        </button>
+        <ul className="room-list">
+          {rooms.map((r) => (
+            <li key={r} className={roomName === r ? "active" : ""}>
+              <a href={`/${r}`}>{r}</a>
+            </li>
+          ))}
+        </ul>
+      </aside>
+      {/* 2. THE MAIN CONTENT */}
+      <div className="app-container">
+        <header className="app-header">
+          <h1>Collab Editor: {roomName}</h1>
+          <div className="status-badge">Users Online: {userCount}</div>
+        </header>
 
-      <main className="editor-main">
-        <textarea className="editor-textarea" value={markdown} onChange={handleTextChange} placeholder="Type markdown..." />
-
-        <div className="editor-preview markdown-body">
-          <ReactMarkdown>{markdown}</ReactMarkdown>
-        </div>
-      </main>
+        <main className="editor-main">
+          <textarea className="editor-textarea" value={markdown} onChange={handleTextChange} placeholder="Type markdown..." />
+          <div className="editor-preview markdown-body">
+            <ReactMarkdown>{markdown}</ReactMarkdown>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

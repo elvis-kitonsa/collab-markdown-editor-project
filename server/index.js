@@ -30,6 +30,17 @@ const io = new Server(server, {
 let onlineUsers = 0; // This variable lives for as long as the server process is running.
 //let currentMarkdown = "# Hello World\nStart typing..."; // This is the "Library" copy. We added this at the top so the server has a "brain" to remember the text.
 
+// Get a list of all unique rooms
+app.get("/rooms", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT room_id FROM documents ORDER BY room_id ASC");
+    res.json(result.rows.map((row) => row.room_id));
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+});
+
 io.on("connection", async (socket) => {
   // Get the room from the handshake (we will set this up in React next)
   const room = socket.handshake.query.room || "general";
