@@ -31,43 +31,44 @@ let onlineUsers = 0; // This variable lives for as long as the server process is
 //let currentMarkdown = "# Hello World\nStart typing..."; // This is the "Library" copy. We added this at the top so the server has a "brain" to remember the text.
 
 io.on("connection", async (socket) => {
-  // User Presence Logic
+  // Get the room from the handshake (we will set this up in React next)
+  const room = socket.handshake.query.room || "general";
+  socket.join(room);
+
   onlineUsers++;
   io.emit("user-count", onlineUsers);
 
-  // 2. INITIAL SYNC: Fetch the latest text from the Database
+  // 1. INITIAL SYNC: Fetch content for THIS specific room
   try {
-    const res = await pool.query("SELECT content FROM documents ORDER BY id DESC LIMIT 1");
-    const latestContent = res.rows[0]?.content || "# Welcome";
-    socket.emit("receive-markdown", latestContent);
+    const res = await pool.query("SELECT content FROM documents WHERE room_id = $1", [room]);
+
+    if (res.rows.length > 0) {
+      socket.emit("receive-markdown", res.rows[0].content);
+    } else {
+      // If room doesn't exist, create it with a welcome message
+      const welcomeText = `# Welcome to Room: ${room}`;
+      await pool.query("INSERT INTO documents (room_id, content) VALUES ($1, $2)", [room, welcomeText]);
+      socket.emit("receive-markdown", welcomeText);
+    }
   } catch (err) {
     console.error("Database Error on connect:", err);
   }
 
-  // 2. INITIAL SYNC: Send the "Library" copy to the new user immediately
-  // Provides newly logged on user with a copy of the entire document to work with
-  //in case the user missed something due to joining late
-  //socket.emit("receive-markdown", currentMarkdown);
-  //console.log("A user connected:", socket.id, "Total users:", onlineUsers);
-
-  // 3. Update the Database when someone types
+  // 2. Update the Database for THIS room only
   socket.on("edit-markdown", async (data) => {
-    //currentMarkdown = data; // UPDATE the "Library" copy so it's fresh for the next person (We make sure that the server updates its own memory before telling everyone else about the change)
-    socket.broadcast.emit("receive-markdown", data);
+    // Only send to others in the SAME room
+    socket.to(room).emit("receive-markdown", data);
 
     try {
-      // For now, we'll just update the first row to keep it simple
-      await pool.query("UPDATE documents SET content = $1 WHERE id = 1", [data]);
+      await pool.query("UPDATE documents SET content = $1 WHERE room_id = $2", [data, room]);
     } catch (err) {
       console.error("Database Error on save:", err);
     }
   });
 
-  // 3. Update the disconnect logic to decrement and notify
   socket.on("disconnect", () => {
     onlineUsers--;
     io.emit("user-count", onlineUsers);
-    //console.log("User disconnected. Total users:", onlineUsers);
   });
 });
 
