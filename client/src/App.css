@@ -1,41 +1,61 @@
+/* Reset default margins */
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
 .app-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  font-family: "Inter", sans-serif;
+  width: 100vw;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .app-header {
-  padding: 1rem 2rem;
-  background: #20232a;
-  color: white;
+  background: #1e1e1e;
+  color: #ffffff;
+  padding: 10px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 2px solid #333;
 }
 
 .editor-main {
   display: flex;
-  flex: 1;
+  flex: 1; /* This takes up the remaining screen space */
   overflow: hidden;
 }
 
-.editor-textarea,
-.editor-preview {
-  flex: 1;
-  padding: 2rem;
-  font-size: 16px;
-  overflow-y: auto;
-}
-
 .editor-textarea {
+  flex: 1;
+  padding: 20px;
+  font-size: 16px;
+  font-family: "Fira Code", "Courier New", monospace;
   border: none;
   border-right: 1px solid #ddd;
   outline: none;
   resize: none;
-  background: #fdfdfd;
+  background: #fafafa;
+  color: #333;
 }
 
 .editor-preview {
+  flex: 1;
+  padding: 20px;
   background: #ffffff;
+  overflow-y: auto;
+  color: #000; /* Ensures text is visible */
+}
+
+.status-badge {
+  background: #007acc;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
 }
