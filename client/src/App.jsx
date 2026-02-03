@@ -1,3 +1,5 @@
+import ReactMarkdown from "react-markdown";
+import "github-markdown-css/github-markdown.css";
 import { useState } from "react";
 import "./App.css";
 
@@ -17,9 +19,9 @@ function App() {
         {/* Left Side: The Input */}
         <textarea className="editor-textarea" value={markdown} onChange={(e) => setMarkdown(e.target.value)} placeholder="Type markdown..." />
 
-        {/* Right Side: The Preview (For now, just raw text) */}
-        <div className="editor-preview">
-          <pre>{markdown}</pre>
+        {/* Right Side: The Preview (Now with Parsing!) */}
+        <div className="editor-preview markdown-body">
+          <ReactMarkdown>{markdown}</ReactMarkdown>
         </div>
       </main>
     </div>
