@@ -16,9 +16,9 @@ function App() {
   const [userCount, setUserCount] = useState(1);
   const [socket, setSocket] = useState(null); // Added missing socket state
   const [rooms, setRooms] = useState([]); // State to hold room list
-  //Adding a state to track who is typing
-  const [isTyping, setIsTyping] = useState(false);
-  const [typingUser, setTypingUser] = useState("");
+  const [isTyping, setIsTyping] = useState(false); //Adding a state to track who is typing
+  const [typingUser, setTypingUser] = useState(""); // Adding a state to track who is typing
+  const [isAnotherUserActive, setIsAnotherUserActive] = useState(false); // Adding a state to track if someone else is currently focusing on the editor to trigger the visual change
 
   // Fetch rooms from the database
   useEffect(() => {
@@ -59,11 +59,20 @@ function App() {
     newSocket.on("user-typing", (data) => {
       console.log("RECEIVED TYPING FROM SERVER:", data); // <--- Add this
       setTypingUser(data.username);
-
       // Auto-hide the message after 2 seconds of no updates
       setTimeout(() => {
         setTypingUser("");
       }, 2000);
+    });
+
+    // 6. Update the useEffect to listen for the incoming event which will result into a trigger for the user-focused-editor event
+    // in which case the isAnotherUserActive state will be updated
+    newSocket.on("user-focused-editor", () => {
+      setIsAnotherUserActive(true);
+    });
+
+    newSocket.on("user-blurred-editor", () => {
+      setIsAnotherUserActive(false);
     });
 
     // Cleanup on close
@@ -114,7 +123,7 @@ function App() {
           <div className="editor-column">
             <div className="typing-indicator">{typingUser ? `${typingUser} is typing...` : "\u00A0"}</div>
 
-            <textarea className="editor-textarea" value={markdown} onChange={handleTextChange} placeholder="Type markdown..." />
+            <textarea className={`editor-textarea ${isAnotherUserActive ? "remote-active" : ""}`} value={markdown} onChange={handleTextChange} onFocus={() => socket.emit("user-focus")} onBlur={() => socket.emit("user-blur")} placeholder="Type markdown..." />
           </div>
 
           <div className="editor-preview markdown-body">

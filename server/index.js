@@ -71,6 +71,16 @@ io.on("connection", async (socket) => {
     socket.to(room).emit("user-typing", data);
   });
 
+  // Listen for when a user clicks into the textarea
+  socket.on("user-focus", (data) => {
+    socket.to(room).emit("user-focused-editor", data);
+  });
+
+  // Listen for when a user clicks away (blur)
+  socket.on("user-blur", () => {
+    socket.to(room).emit("user-blurred-editor");
+  });
+
   // 2. Update the Database for THIS room only
   socket.on("edit-markdown", async (data) => {
     // Only send to others in the SAME room
