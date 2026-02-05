@@ -65,6 +65,12 @@ io.on("connection", async (socket) => {
     console.error("Database Error on connect:", err);
   }
 
+  // Listen for typing events
+  socket.on("typing", (data) => {
+    // Broadcast to everyone in the room EXCEPT the person typing
+    socket.to(room).emit("user-typing", data);
+  });
+
   // 2. Update the Database for THIS room only
   socket.on("edit-markdown", async (data) => {
     // Only send to others in the SAME room

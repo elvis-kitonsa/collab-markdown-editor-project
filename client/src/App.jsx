@@ -16,6 +16,9 @@ function App() {
   const [userCount, setUserCount] = useState(1);
   const [socket, setSocket] = useState(null); // Added missing socket state
   const [rooms, setRooms] = useState([]); // State to hold room list
+  //Adding a state to track who is typing
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUser, setTypingUser] = useState("");
 
   // Fetch rooms from the database
   useEffect(() => {
@@ -50,6 +53,19 @@ function App() {
       setUserCount(count);
     });
 
+    // 5. Update the useEffect to listen for the incoming event
+    // This will result into a trigger for the user-typing event in which case
+    // the typingUser state will be updated and the message will be displayed
+    newSocket.on("user-typing", (data) => {
+      console.log("RECEIVED TYPING FROM SERVER:", data); // <--- Add this
+      setTypingUser(data.username);
+
+      // Auto-hide the message after 2 seconds of no updates
+      setTimeout(() => {
+        setTypingUser("");
+      }, 2000);
+    });
+
     // Cleanup on close
     return () => newSocket.disconnect();
   }, [roomName]);
@@ -62,6 +78,9 @@ function App() {
     // 5. Use the socket from state to send changes
     if (socket) {
       socket.emit("edit-markdown", newValue);
+      // Let others know we are typing!
+      // (For now, we'll just say "Someone")
+      socket.emit("typing", { username: "Someone" });
     }
   };
 
@@ -91,7 +110,13 @@ function App() {
         </header>
 
         <main className="editor-main">
-          <textarea className="editor-textarea" value={markdown} onChange={handleTextChange} placeholder="Type markdown..." />
+          {/* This Column Wrapper is the secret sauce */}
+          <div className="editor-column">
+            <div className="typing-indicator">{typingUser ? `${typingUser} is typing...` : "\u00A0"}</div>
+
+            <textarea className="editor-textarea" value={markdown} onChange={handleTextChange} placeholder="Type markdown..." />
+          </div>
+
           <div className="editor-preview markdown-body">
             <ReactMarkdown>{markdown}</ReactMarkdown>
           </div>

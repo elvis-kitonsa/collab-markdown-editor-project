@@ -102,3 +102,42 @@ body,
   cursor: pointer;
   border-radius: 4px;
 }
+
+/* Style for the typing indicator added to indicate who is typing */
+.typing-indicator {
+  padding: 5px 20px;
+  font-size: 13px;
+  color: #27ae60; /* Green text */
+  background: #f8f9fa; /* Light grey bar */
+  border-bottom: 1px solid #ddd;
+  font-weight: 500;
+  height: 25px;
+  display: flex;
+  align-items: center;
+}
+
+.editor-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  border-right: 1px solid #ddd;
+}
+
+.typing-indicator {
+  height: 30px;
+  background-color: #f1f1f1; /* Explicit grey color */
+  color: #27ae60;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  padding-left: 20px;
+  border-bottom: 1px solid #ddd;
+  font-weight: 600;
+}
+
+/* Ensure the textarea takes up the remaining space below the indicator */
+.editor-column .editor-textarea {
+  flex: 1;
+  border-right: none; /* Remove the old border since the column has it now */
+}
