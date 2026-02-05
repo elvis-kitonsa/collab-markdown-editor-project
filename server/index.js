@@ -81,6 +81,15 @@ io.on("connection", async (socket) => {
     socket.to(room).emit("user-blurred-editor");
   });
 
+  // Listen for when a user goes idle
+  socket.on("user-idle", (isIdle) => {
+    // Broadcast the idle status to everyone else in the room
+    socket.to(room).emit("user-status-changed", {
+      userId: socket.id,
+      status: isIdle ? "idle" : "active",
+    });
+  });
+
   // 2. Update the Database for THIS room only
   socket.on("edit-markdown", async (data) => {
     // Only send to others in the SAME room

@@ -19,6 +19,7 @@ function App() {
   const [isTyping, setIsTyping] = useState(false); //Adding a state to track who is typing
   const [typingUser, setTypingUser] = useState(""); // Adding a state to track who is typing
   const [isAnotherUserActive, setIsAnotherUserActive] = useState(false); // Adding a state to track if someone else is currently focusing on the editor to trigger the visual change
+  const [isRemoteUserIdle, setIsRemoteUserIdle] = useState(false); // Adding a state to track if the remote user is idle
 
   // Fetch rooms from the database
   useEffect(() => {
@@ -35,48 +36,58 @@ function App() {
   };
 
   useEffect(() => {
-    // Pass the room name to the server when connecting
-    // 2. Create the connection ONCE when the component loads
     const newSocket = io("http://localhost:3001", {
       query: { room: roomName },
     });
 
     setSocket(newSocket);
 
-    // 3. Listen for data specifically for this room
-    newSocket.on("receive-markdown", (data) => {
-      setMarkdown(data);
-    });
+    // 1. ADD THESE BACK: Basic Syncing
+    newSocket.on("receive-markdown", (data) => setMarkdown(data));
+    newSocket.on("user-count", (count) => setUserCount(count));
 
-    // 4. Update user count (using the correct state setter)
-    newSocket.on("user-count", (count) => {
-      setUserCount(count);
-    });
-
-    // 5. Update the useEffect to listen for the incoming event
-    // This will result into a trigger for the user-typing event in which case
-    // the typingUser state will be updated and the message will be displayed
+    // 2. Typing Indicator Listener
     newSocket.on("user-typing", (data) => {
-      console.log("RECEIVED TYPING FROM SERVER:", data); // <--- Add this
       setTypingUser(data.username);
-      // Auto-hide the message after 2 seconds of no updates
-      setTimeout(() => {
-        setTypingUser("");
-      }, 2000);
+      setTimeout(() => setTypingUser(""), 2000);
     });
 
-    // 6. Update the useEffect to listen for the incoming event which will result into a trigger for the user-focused-editor event
-    // in which case the isAnotherUserActive state will be updated
-    newSocket.on("user-focused-editor", () => {
-      setIsAnotherUserActive(true);
+    // 3. Focus Listeners
+    newSocket.on("user-focused-editor", () => setIsAnotherUserActive(true));
+    newSocket.on("user-blurred-editor", () => setIsAnotherUserActive(false));
+
+    // 4. Idle Logic (Keep this exactly as you had it)
+    let idleTimer;
+    const resetIdleTimer = () => {
+      // Log to see if this is firing in your console
+      console.log("Activity detected, resetting timer...");
+
+      newSocket.emit("user-idle", false);
+      clearTimeout(idleTimer);
+
+      idleTimer = setTimeout(() => {
+        console.log("30s passed! Sending IDLE status...");
+        newSocket.emit("user-idle", true);
+      }, 30000);
+    };
+
+    // START THE TIMER IMMEDIATELY ON LOAD
+    resetIdleTimer();
+
+    window.addEventListener("mousemove", resetIdleTimer);
+    window.addEventListener("keydown", resetIdleTimer);
+
+    newSocket.on("user-status-changed", (data) => {
+      setIsRemoteUserIdle(data.status === "idle");
     });
 
-    newSocket.on("user-blurred-editor", () => {
-      setIsAnotherUserActive(false);
-    });
-
-    // Cleanup on close
-    return () => newSocket.disconnect();
+    // 5. Cleanup
+    return () => {
+      newSocket.disconnect();
+      window.removeEventListener("mousemove", resetIdleTimer);
+      window.removeEventListener("keydown", resetIdleTimer);
+      clearTimeout(idleTimer);
+    };
   }, [roomName]);
   // [roomName] means that if the roomName in the URL changes, disconnect from the old room and connect to the new one.
 
@@ -115,7 +126,11 @@ function App() {
       <div className="app-container">
         <header className="app-header">
           <h1>Collab Editor: {roomName}</h1>
-          <div className="status-badge">Users Online: {userCount}</div>
+          <div className="status-badge">
+            Users Online: {userCount}
+            {/* Updating the "Users Online" badge to show a moon icon if the other user is idle */}
+            {isRemoteUserIdle && <span style={{ marginLeft: "10px" }}>🌙 (User Idle)</span>}
+          </div>
         </header>
 
         <main className="editor-main">
