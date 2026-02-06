@@ -42,38 +42,35 @@ function App() {
 
     setSocket(newSocket);
 
-    // 1. ADD THESE BACK: Basic Syncing
     newSocket.on("receive-markdown", (data) => setMarkdown(data));
     newSocket.on("user-count", (count) => setUserCount(count));
 
-    // 2. Typing Indicator Listener
     newSocket.on("user-typing", (data) => {
       setTypingUser(data.username);
       setTimeout(() => setTypingUser(""), 2000);
     });
 
-    // 3. Focus Listeners
     newSocket.on("user-focused-editor", () => setIsAnotherUserActive(true));
     newSocket.on("user-blurred-editor", () => setIsAnotherUserActive(false));
 
-    // 4. Idle Logic (Keep this exactly as you had it)
+    // --- IDLE LOGIC ---
+    let isCurrentlyIdle = false;
     let idleTimer;
+
     const resetIdleTimer = () => {
-      // Log to see if this is firing in your console
-      console.log("Activity detected, resetting timer...");
-
-      newSocket.emit("user-idle", false);
+      if (isCurrentlyIdle) {
+        newSocket.emit("user-idle", false);
+        isCurrentlyIdle = false;
+      }
       clearTimeout(idleTimer);
-
       idleTimer = setTimeout(() => {
-        console.log("30s passed! Sending IDLE status...");
         newSocket.emit("user-idle", true);
+        isCurrentlyIdle = true;
       }, 30000);
     };
 
-    // START THE TIMER IMMEDIATELY ON LOAD
+    // Initialize listeners
     resetIdleTimer();
-
     window.addEventListener("mousemove", resetIdleTimer);
     window.addEventListener("keydown", resetIdleTimer);
 
@@ -81,25 +78,21 @@ function App() {
       setIsRemoteUserIdle(data.status === "idle");
     });
 
-    // 5. Cleanup
+    // Cleanup
     return () => {
       newSocket.disconnect();
       window.removeEventListener("mousemove", resetIdleTimer);
       window.removeEventListener("keydown", resetIdleTimer);
       clearTimeout(idleTimer);
     };
-  }, [roomName]);
-  // [roomName] means that if the roomName in the URL changes, disconnect from the old room and connect to the new one.
+  }, [roomName]); // <--- This was missing!
 
   const handleTextChange = (e) => {
     const newValue = e.target.value;
     setMarkdown(newValue);
 
-    // 5. Use the socket from state to send changes
     if (socket) {
       socket.emit("edit-markdown", newValue);
-      // Let others know we are typing!
-      // (For now, we'll just say "Someone")
       socket.emit("typing", { username: "Someone" });
     }
   };
