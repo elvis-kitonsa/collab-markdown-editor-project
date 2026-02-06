@@ -116,43 +116,56 @@ body,
   align-items: center;
 }
 
+/* --- Optimized Editor Column Layout --- */
 .editor-column {
   display: flex;
   flex-direction: column;
   flex: 1;
   height: 100%;
-  border-right: 1px solid #ddd;
+  background: #fafafa; /* Consistent background */
 }
 
-.typing-indicator {
-  height: 30px;
-  background-color: #f1f1f1; /* Explicit grey color */
-  color: #27ae60;
-  font-size: 13px;
+/* --- Clean Toolbar Integration --- */
+.editor-toolbar {
+  background: #1e1e1e; /* Match header for a dark-mode pro look */
+  padding: 8px 15px;
   display: flex;
-  align-items: center;
-  padding-left: 20px;
-  border-bottom: 1px solid #ddd;
-  font-weight: 600;
+  gap: 8px;
+  border-bottom: 1px solid #333;
 }
 
-/* Ensure the textarea takes up the remaining space below the indicator */
-.editor-column .editor-textarea {
-  flex: 1;
-  border-right: none; /* Remove the old border since the column has it now */
+.editor-toolbar button {
+  background: #333;
+  color: #d4d4d4;
+  border: 1px solid #444;
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-/* The state when someone is focusing */
-/* This means that the textarea is focused and the user is typing */
+.editor-toolbar button:hover {
+  background: #007acc; /* Highlight with VS Code blue */
+  color: white;
+  border-color: #005a9e;
+}
+
+/* --- Unified Textarea --- */
 .editor-textarea {
-  transition:
-    border 0.3s ease,
-    box-shadow 0.3s ease;
-  border: 1px solid #ddd;
+  flex: 1;
+  padding: 20px;
+  font-size: 16px;
+  font-family: "Fira Code", "Courier New", monospace;
+  border: none;
+  outline: none;
+  resize: none;
+  background: #ffffff; /* Brighter for better contrast with markdown */
+  color: #1e1e1e;
+  line-height: 1.6;
 }
 
-/* The state when someone ELSE is focusing */
+/* Remote active state - slightly thicker for visibility */
 .editor-textarea.remote-active {
-  border: 2px solid #007acc !important;
-  box-shadow: inset 0 0 5px rgba(0, 122, 204, 0.2);
+  box-shadow: inset 0 0 0 2px #007acc; /* Using box-shadow instead of border to prevent "jumping" text */
 }

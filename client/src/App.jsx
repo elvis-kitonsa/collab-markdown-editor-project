@@ -4,6 +4,9 @@ import { useState, useEffect } from "react"; //Combined imports
 //useEffect - Tell React to send the text to the server whenever it changes
 import "./App.css";
 import { io } from "socket.io-client";
+import Prism from "prismjs";
+import "prismjs/themes/prism-tomorrow.css"; // A nice dark theme
+import "prismjs/components/prism-markdown"; // Markdown support
 
 // 1. Get room name from URL safely
 const path = window.location.pathname.split("/")[1];
@@ -16,11 +19,33 @@ function App() {
   const [userCount, setUserCount] = useState(1);
   const [socket, setSocket] = useState(null); // Added missing socket state
   const [rooms, setRooms] = useState([]); // State to hold room list
-  const [isTyping, setIsTyping] = useState(false); //Adding a state to track who is typing
   const [typingUser, setTypingUser] = useState(""); // Adding a state to track who is typing
   const [isAnotherUserActive, setIsAnotherUserActive] = useState(false); // Adding a state to track if someone else is currently focusing on the editor to trigger the visual change
   const [isRemoteUserIdle, setIsRemoteUserIdle] = useState(false); // Adding a state to track if the remote user is idle
 
+  // =============================== TOOLBAR LOGIC ===============================
+  // Function that takes whatever
+  // text is selected in your textarea and wraps it in Markdown symbols (like ** for bold).
+  const injectMarkdown = (symbol) => {
+    const textarea = document.querySelector(".editor-textarea");
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+
+    // Wrap selected text or just insert symbols
+    const before = text.substring(0, start);
+    const selected = text.substring(start, end);
+    const after = text.substring(end);
+
+    const newText = `${before}${symbol}${selected}${symbol}${after}`;
+
+    setMarkdown(newText);
+    socket.emit("edit-markdown", newText);
+
+    // Refocus the textarea
+    textarea.focus();
+  };
+  // =============================================================================
   // Fetch rooms from the database
   useEffect(() => {
     fetch("http://localhost:3001/rooms")
@@ -130,6 +155,18 @@ function App() {
           {/* This Column Wrapper is the secret sauce */}
           <div className="editor-column">
             <div className="typing-indicator">{typingUser ? `${typingUser} is typing...` : "\u00A0"}</div>
+
+            {/* NEW TOOLBAR */}
+            <div className="editor-toolbar">
+              <button onClick={() => injectMarkdown("**")}>
+                <b>B</b>
+              </button>
+              <button onClick={() => injectMarkdown("_")}>
+                <i>I</i>
+              </button>
+              <button onClick={() => injectMarkdown("### ")}>H3</button>
+              <button onClick={() => injectMarkdown("[")}>🔗 Link</button>
+            </div>
 
             <textarea className={`editor-textarea ${isAnotherUserActive ? "remote-active" : ""}`} value={markdown} onChange={handleTextChange} onFocus={() => socket.emit("user-focus")} onBlur={() => socket.emit("user-blur")} placeholder="Type markdown..." />
           </div>
