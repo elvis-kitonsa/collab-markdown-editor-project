@@ -16,6 +16,10 @@ function App() {
   const [userCount, setUserCount] = useState(1);
   const [socket, setSocket] = useState(null); // Added missing socket state
   const [rooms, setRooms] = useState([]); // State to hold room list
+  const [isTyping, setIsTyping] = useState(false); //Adding a state to track who is typing
+  const [typingUser, setTypingUser] = useState(""); // Adding a state to track who is typing
+  const [isAnotherUserActive, setIsAnotherUserActive] = useState(false); // Adding a state to track if someone else is currently focusing on the editor to trigger the visual change
+  const [isRemoteUserIdle, setIsRemoteUserIdle] = useState(false); // Adding a state to track if the remote user is idle
 
   // Fetch rooms from the database
   useEffect(() => {
@@ -32,36 +36,64 @@ function App() {
   };
 
   useEffect(() => {
-    // Pass the room name to the server when connecting
-    // 2. Create the connection ONCE when the component loads
     const newSocket = io("http://localhost:3001", {
       query: { room: roomName },
     });
 
     setSocket(newSocket);
 
-    // 3. Listen for data specifically for this room
-    newSocket.on("receive-markdown", (data) => {
-      setMarkdown(data);
+    newSocket.on("receive-markdown", (data) => setMarkdown(data));
+    newSocket.on("user-count", (count) => setUserCount(count));
+
+    newSocket.on("user-typing", (data) => {
+      setTypingUser(data.username);
+      setTimeout(() => setTypingUser(""), 2000);
     });
 
-    // 4. Update user count (using the correct state setter)
-    newSocket.on("user-count", (count) => {
-      setUserCount(count);
+    newSocket.on("user-focused-editor", () => setIsAnotherUserActive(true));
+    newSocket.on("user-blurred-editor", () => setIsAnotherUserActive(false));
+
+    // --- IDLE LOGIC ---
+    let isCurrentlyIdle = false;
+    let idleTimer;
+
+    const resetIdleTimer = () => {
+      if (isCurrentlyIdle) {
+        newSocket.emit("user-idle", false);
+        isCurrentlyIdle = false;
+      }
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        newSocket.emit("user-idle", true);
+        isCurrentlyIdle = true;
+      }, 30000);
+    };
+
+    // Initialize listeners
+    resetIdleTimer();
+    window.addEventListener("mousemove", resetIdleTimer);
+    window.addEventListener("keydown", resetIdleTimer);
+
+    newSocket.on("user-status-changed", (data) => {
+      setIsRemoteUserIdle(data.status === "idle");
     });
 
-    // Cleanup on close
-    return () => newSocket.disconnect();
-  }, [roomName]);
-  // [roomName] means that if the roomName in the URL changes, disconnect from the old room and connect to the new one.
+    // Cleanup
+    return () => {
+      newSocket.disconnect();
+      window.removeEventListener("mousemove", resetIdleTimer);
+      window.removeEventListener("keydown", resetIdleTimer);
+      clearTimeout(idleTimer);
+    };
+  }, [roomName]); // <--- This was missing!
 
   const handleTextChange = (e) => {
     const newValue = e.target.value;
     setMarkdown(newValue);
 
-    // 5. Use the socket from state to send changes
     if (socket) {
       socket.emit("edit-markdown", newValue);
+      socket.emit("typing", { username: "Someone" });
     }
   };
 
@@ -87,11 +119,21 @@ function App() {
       <div className="app-container">
         <header className="app-header">
           <h1>Collab Editor: {roomName}</h1>
-          <div className="status-badge">Users Online: {userCount}</div>
+          <div className="status-badge">
+            Users Online: {userCount}
+            {/* Updating the "Users Online" badge to show a moon icon if the other user is idle */}
+            {isRemoteUserIdle && <span style={{ marginLeft: "10px" }}>🌙 (User Idle)</span>}
+          </div>
         </header>
 
         <main className="editor-main">
-          <textarea className="editor-textarea" value={markdown} onChange={handleTextChange} placeholder="Type markdown..." />
+          {/* This Column Wrapper is the secret sauce */}
+          <div className="editor-column">
+            <div className="typing-indicator">{typingUser ? `${typingUser} is typing...` : "\u00A0"}</div>
+
+            <textarea className={`editor-textarea ${isAnotherUserActive ? "remote-active" : ""}`} value={markdown} onChange={handleTextChange} onFocus={() => socket.emit("user-focus")} onBlur={() => socket.emit("user-blur")} placeholder="Type markdown..." />
+          </div>
+
           <div className="editor-preview markdown-body">
             <ReactMarkdown>{markdown}</ReactMarkdown>
           </div>

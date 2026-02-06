@@ -65,6 +65,31 @@ io.on("connection", async (socket) => {
     console.error("Database Error on connect:", err);
   }
 
+  // Listen for typing events
+  socket.on("typing", (data) => {
+    // Broadcast to everyone in the room EXCEPT the person typing
+    socket.to(room).emit("user-typing", data);
+  });
+
+  // Listen for when a user clicks into the textarea
+  socket.on("user-focus", (data) => {
+    socket.to(room).emit("user-focused-editor", data);
+  });
+
+  // Listen for when a user clicks away (blur)
+  socket.on("user-blur", () => {
+    socket.to(room).emit("user-blurred-editor");
+  });
+
+  // Listen for when a user goes idle
+  socket.on("user-idle", (isIdle) => {
+    // Broadcast the idle status to everyone else in the room
+    socket.to(room).emit("user-status-changed", {
+      userId: socket.id,
+      status: isIdle ? "idle" : "active",
+    });
+  });
+
   // 2. Update the Database for THIS room only
   socket.on("edit-markdown", async (data) => {
     // Only send to others in the SAME room
